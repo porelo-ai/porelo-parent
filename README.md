@@ -1,2 +1,2 @@
-# sokar-parent
-Sokar Parent POM
+# porelo-parent
+Porelo Parent POM

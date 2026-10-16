@@ -3,19 +3,19 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <!-- The one parent every Sokar Maven repository takes: what they share, named once. It names no parent of its
+    <!-- The one parent every Porelo Maven repository takes: what they share, named once. It names no parent of its
          own, so a repository needs nothing else before it can build, and it is the first thing a release chain
-         publishes. It uses nothing of another Sokar repository - not the build tools, not sokar-bom. -->
+         publishes. It uses nothing of another Porelo repository - not the build tools, not porelo-bom. -->
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.fuin.sokar</groupId>
-    <artifactId>sokar-parent</artifactId>
-    <version>0.1.4-SNAPSHOT</version>
+    <groupId>org.fuin.porelo</groupId>
+    <artifactId>porelo-parent</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Sokar Parent</name>
-    <description>Sokar - The parent of every Sokar Maven repository (PARENT)</description>
-    <url>https://github.com/sokar-ai/sokar-parent/</url>
+    <name>Porelo Parent</name>
+    <description>Porelo - The parent of every Porelo Maven repository (PARENT)</description>
+    <url>https://github.com/porelo-ai/porelo-parent/</url>
 
     <licenses>
         <license>
@@ -36,14 +36,14 @@
     </developers>
 
     <scm>
-        <url>https://github.com/sokar-ai/sokar-parent/</url>
-        <connection>scm:git:git://github.com/sokar-ai/sokar-parent.git</connection>
-        <developerConnection>scm:git:git@github.com:sokar-ai/sokar-parent.git</developerConnection>
+        <url>https://github.com/porelo-ai/porelo-parent/</url>
+        <connection>scm:git:git://github.com/porelo-ai/porelo-parent.git</connection>
+        <developerConnection>scm:git:git@github.com:porelo-ai/porelo-parent.git</developerConnection>
     </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/sokar-ai/sokar-parent/issues</url>
+        <url>https://github.com/porelo-ai/porelo-parent/issues</url>
     </issueManagement>
 
     <properties>
@@ -63,8 +63,8 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <skipPublishing>true</skipPublishing>
 
-        <!-- The Sokar build tools: sokar-release and sokar-machines. -->
-        <sokar.buildtools.version>0.4.5-SNAPSHOT</sokar.buildtools.version>
+        <!-- The Porelo build tools: porelo-release and porelo-machines. -->
+        <porelo.buildtools.version>0.5.0-SNAPSHOT</porelo.buildtools.version>
 
         <!-- Plugin versions a repository names in its own build. -->
         <build-helper.version>3.6.1</build-helper.version>
@@ -98,7 +98,7 @@
         <sshj.version>0.40.0</sshj.version>
     </properties>
 
-    <!-- What every Sokar repository resolves the same way. JUnit as one set, so that Jupiter, the platform and the
+    <!-- What every Porelo repository resolves the same way. JUnit as one set, so that Jupiter, the platform and the
          suite engine agree: an importer whose own BOM pins Jupiter beside a suite from a different platform - as
          org.fuin:bom does - gets a mixed set the moment the acceptance kit sits between them, and the suite engine
          dies on a missing method. No other BOM: one decides every version a repository does not name itself, so
@@ -113,16 +113,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- The build tooling, published from sokar-buildtools on its own version line. -->
+            <!-- The build tooling, published from porelo-buildtools on its own version line. -->
             <dependency>
-                <groupId>org.fuin.sokar</groupId>
-                <artifactId>sokar-machines</artifactId>
-                <version>${sokar.buildtools.version}</version>
+                <groupId>org.fuin.porelo</groupId>
+                <artifactId>porelo-machines</artifactId>
+                <version>${porelo.buildtools.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.fuin.sokar</groupId>
-                <artifactId>sokar-release</artifactId>
-                <version>${sokar.buildtools.version}</version>
+                <groupId>org.fuin.porelo</groupId>
+                <artifactId>porelo-release</artifactId>
+                <version>${porelo.buildtools.version}</version>
             </dependency>
 
             <!-- What the acceptance kit is built with, so a consumer adding a step of its own
@@ -293,7 +293,7 @@
                     <version>3.3.1</version>
                 </plugin>
 
-                <!-- What every Sokar repository adds. -->
+                <!-- What every Porelo repository adds. -->
 
                 <!-- A repository's root declares this plugin, groupId and artifactId only, and every module it holds
                      is flattened: a published pom then names no parent, so a consumer needs nothing but the module.
@@ -517,21 +517,21 @@
 
         </profile>
 
-        <!-- The Sokar tools on one classpath, for a workflow to run them from:
-             'dependency:build-classpath -Pci-tools', then org.fuin.sokar.machines.Main and org.fuin.sokar.release.Main.
+        <!-- The Porelo tools on one classpath, for a workflow to run them from:
+             'dependency:build-classpath -Pci-tools', then org.fuin.porelo.machines.Main and org.fuin.porelo.release.Main.
              Nothing in this pom's own build uses them. -->
         <profile>
             <id>ci-tools</id>
             <dependencies>
                 <dependency>
-                    <groupId>org.fuin.sokar</groupId>
-                    <artifactId>sokar-machines</artifactId>
-                    <version>${sokar.buildtools.version}</version>
+                    <groupId>org.fuin.porelo</groupId>
+                    <artifactId>porelo-machines</artifactId>
+                    <version>${porelo.buildtools.version}</version>
                 </dependency>
                 <dependency>
-                    <groupId>org.fuin.sokar</groupId>
-                    <artifactId>sokar-release</artifactId>
-                    <version>${sokar.buildtools.version}</version>
+                    <groupId>org.fuin.porelo</groupId>
+                    <artifactId>porelo-release</artifactId>
+                    <version>${porelo.buildtools.version}</version>
                 </dependency>
             </dependencies>
         </profile>

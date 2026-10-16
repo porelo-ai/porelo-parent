@@ -16,8 +16,8 @@ cat > "$CHILD/pom.xml" <<EOF
 <project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.fuin.sokar</groupId>
-        <artifactId>sokar-parent</artifactId>
+        <groupId>org.fuin.porelo</groupId>
+        <artifactId>porelo-parent</artifactId>
         <version>$VERSION</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>

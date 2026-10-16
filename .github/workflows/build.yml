@@ -34,6 +34,10 @@ jobs:
       - name: Build
         run: JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -s settings.xml verify
 
+      # The repository was renamed: no tracked file says the old name.
+      - name: No file says the old name
+        run: test/no-old-name.sh
+
       # What a child inherits under the release profile: the publishing plugin, as an extension, in its own build.
       - name: A child can publish
         run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-publishes.sh
