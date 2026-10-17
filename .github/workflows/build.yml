@@ -29,6 +29,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # The runner's own Java 25, and the Maven the wrapper pins: the runner's Maven is whatever its image carries.
       - name: Build
@@ -75,6 +77,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # A tag publishes a release, main a snapshot. A release is refused unless the tag is exactly 'v' plus the
       # version it carries, and a version is never a release and a snapshot at once.
