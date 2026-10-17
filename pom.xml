@@ -11,7 +11,7 @@
 
     <groupId>org.fuin.porelo</groupId>
     <artifactId>porelo-parent</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Porelo Parent</name>
     <description>Porelo - The parent of every Porelo Maven repository (PARENT)</description>
@@ -64,7 +64,7 @@
         <skipPublishing>true</skipPublishing>
 
         <!-- The Porelo build tools: porelo-release and porelo-machines. -->
-        <porelo.buildtools.version>0.5.0</porelo.buildtools.version>
+        <porelo.buildtools.version>0.5.1-SNAPSHOT</porelo.buildtools.version>
 
         <!-- Plugin versions a repository names in its own build. -->
         <build-helper.version>3.6.1</build-helper.version>
