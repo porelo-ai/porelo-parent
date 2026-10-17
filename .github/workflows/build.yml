@@ -42,6 +42,27 @@ jobs:
       - name: A child can publish
         run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-publishes.sh
 
+      # A child that names spotless-maven-plugin fails 'validate' on a misformatted Java file, and only then.
+      - name: A misformatted Java file fails validate
+        run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-java-fails.sh
+
+      # The shfmt the pom pins, which Spotless does not download: checked against the digest its release names.
+      - name: The pinned shfmt
+        run: |
+          set -eu
+          VERSION="$(sed -n 's|^ *<shfmt.version>\(.*\)</shfmt.version>$|\1|p' pom.xml)"
+          [ "$VERSION" = 3.12.0 ] || { echo "::error::pom.xml pins shfmt $VERSION; this step installs 3.12.0"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL -o "$RUNNER_TEMP/bin/shfmt" \
+              "https://github.com/mvdan/sh/releases/download/v$VERSION/shfmt_v${VERSION}_linux_amd64"
+          echo "d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea  $RUNNER_TEMP/bin/shfmt" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/bin/shfmt"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      # A child that names spotless-maven-plugin fails 'validate' on a misformatted shell script.
+      - name: A misformatted shell script fails validate
+        run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-shell-fails.sh
+
   deploy:
     name: Publish
     runs-on: ubuntu-latest

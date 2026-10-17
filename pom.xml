@@ -82,6 +82,12 @@
         <rpm-maven-plugin.version>2.3.0</rpm-maven-plugin.version>
         <native-maven-plugin.version>1.1.11</native-maven-plugin.version>
         <nullaway.version>0.14.2</nullaway.version>
+        <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
+        <!-- 1.37.0 is not taken: run through Spotless's library, it fails on every file with an
+             InvocationTargetException, while 1.36.0 formats (measured 2026-10-17). -->
+        <google-java-format.version>1.36.0</google-java-format.version>
+        <!-- Not downloaded by Spotless: every machine that builds has exactly this shfmt on its PATH. -->
+        <shfmt.version>3.12.0</shfmt.version>
         <!-- More NullAway options for a repository that needs them, such as the fields a framework injects. -->
         <nullaway.args/>
 
@@ -394,6 +400,40 @@
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
                     <version>${native-maven-plugin.version}</version>
+                </plugin>
+
+                <!-- The code style's check: a repository names this plugin, groupId and artifactId only, in its
+                     <plugins>, and every Java file of each module is then checked against google-java-format in its
+                     AOSP style when it validates, every *.sh against shfmt; 'spotless:apply' formats them. The Java
+                     formatter runs with its own defaults: it sorts imports, removes unused ones and rewraps Javadoc.
+                     shfmt takes no options here: it reads its indent from the shared .editorconfig, without which
+                     it would indent by tabs. -->
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless-maven-plugin.version}</version>
+                    <configuration>
+                        <java>
+                            <googleJavaFormat>
+                                <version>${google-java-format.version}</version>
+                                <style>AOSP</style>
+                            </googleJavaFormat>
+                        </java>
+                        <shell>
+                            <shfmt>
+                                <version>${shfmt.version}</version>
+                            </shfmt>
+                        </shell>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>spotless-check</id>
+                            <phase>validate</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
 
             </plugins>
