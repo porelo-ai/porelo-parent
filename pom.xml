@@ -420,6 +420,16 @@
                             </googleJavaFormat>
                         </java>
                         <shell>
+                            <!-- Spotless takes every *.sh under the tree and reads no .gitignore: a local script in a
+                                 hidden directory, or one a build wrote, turned 'validate' red on one machine while a
+                                 fresh clone was green. So hidden directories and build output are left out. -->
+                            <excludes>
+                                <exclude>.*/**</exclude>
+                                <exclude>**/.*/**</exclude>
+                                <exclude>**/target/**</exclude>
+                                <exclude>**/build/**</exclude>
+                                <exclude>**/node_modules/**</exclude>
+                            </excludes>
                             <shfmt>
                                 <version>${shfmt.version}</version>
                             </shfmt>

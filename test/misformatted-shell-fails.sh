@@ -91,4 +91,20 @@ else
     FAULTS=$((FAULTS + 1))
 fi
 
-[ "$FAULTS" -eq 0 ] || { echo "FAULT $FAULTS of 2 cases"; exit 1; }
+# A script no repository tracks - in a hidden directory, or what a build wrote - is not the repository's: it must not
+# turn 'validate' red on one machine while a fresh clone is green.
+child untracked
+formatted untracked
+for place in .channel target build node_modules .dart_tool; do
+    mkdir -p "$BASE/untracked/$place"
+    printf '#!/bin/sh\nif true\nthen\n  echo x\nfi\n' > "$BASE/untracked/$place/local.sh"
+done
+if validate untracked; then
+    echo "OK    a script in a hidden directory or in what a build wrote is not checked"
+else
+    echo "FAULT 'validate' checked a script outside the repository's own files; got:"
+    cat "$BASE/untracked.log"
+    FAULTS=$((FAULTS + 1))
+fi
+
+[ "$FAULTS" -eq 0 ] || { echo "FAULT $FAULTS of 3 cases"; exit 1; }
