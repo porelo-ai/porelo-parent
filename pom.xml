@@ -94,7 +94,12 @@
         <!-- Third-party libraries more than one repository uses. -->
         <bouncycastle.version>1.85.2</bouncycastle.version>
         <cucumber.version>7.34.8</cucumber.version>
-        <cyclonedx-core-java.version>9.0.5</cyclonedx-core-java.version>
+        <!-- 3.18.0, past GHSA-j288-q9x7-2f5v: cyclonedx-core-java brings it, and the fuin BOM a repository may import
+             holds 3.17.0. Managed below, which an imported BOM cannot override. -->
+        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <!-- 11.0.1, past GHSA-6fhj-vr9j-g45r (an XXE in validating a bill as XML); porelo-release reads bills with
+             it, unchanged across the two major versions. -->
+        <cyclonedx-core-java.version>11.0.1</cyclonedx-core-java.version>
         <fuin-bom.version>1.0.2</fuin-bom.version>
         <!-- 5.14.2 rather than the 5.12.2 the fuin BOM pins: that is the set Cucumber 7.34 is built against, and an
              acceptance suite does not discover a test without it. Imported as junit-bom, so Jupiter, the platform
@@ -129,6 +134,19 @@
                 <groupId>org.fuin.porelo</groupId>
                 <artifactId>porelo-release</artifactId>
                 <version>${porelo.buildtools.version}</version>
+            </dependency>
+
+            <!-- porelo-release's bills library and what it brings, so a repository's tools resolve these and not
+                 the older ones porelo-release was published with. -->
+            <dependency>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-core-java</artifactId>
+                <version>${cyclonedx-core-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
             </dependency>
 
             <!-- What the acceptance kit is built with, so a consumer adding a step of its own
