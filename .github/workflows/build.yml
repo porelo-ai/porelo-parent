@@ -46,6 +46,10 @@ jobs:
       - name: A child can publish
         run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-publishes.sh
 
+      # What a child inherits under the forge profile: an unsigned snapshot deploy to MAVEN_SNAPSHOTS_URL, if it opts in.
+      - name: A child can deploy to a forge
+        run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-deploys-to-forge.sh
+
       # A child that names spotless-maven-plugin fails 'validate' on a misformatted Java file, and only then.
       - name: A misformatted Java file fails validate
         run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-java-fails.sh
@@ -105,10 +109,20 @@ jobs:
 
       # Signed by the plugin's BouncyCastle signer, which reads the armored key and its passphrase from this step's
       # environment and keeps them in the build's memory: the private key is never written to the runner's disk.
+      # The forge names the profile: central-sonatype-release on GitHub, forge-release on the local forge.
       - name: Publish
         env:
+          PORELO_DEPLOY_PROFILE: ${{ vars.PORELO_DEPLOY_PROFILE }}
+          MAVEN_SNAPSHOTS_URL: ${{ vars.MAVEN_SNAPSHOTS_URL }}
+          PORELO_PUBLISHER_TOKEN: ${{ secrets.PORELO_PUBLISHER_TOKEN }}
           OSS_SONATYPE_USERNAME: ${{ secrets.OSS_SONATYPE_USERNAME }}
           OSS_SONATYPE_TOKEN: ${{ secrets.OSS_SONATYPE_TOKEN }}
           MAVEN_GPG_KEY: ${{ secrets.OSS_SONATYPE_GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSS_SONATYPE_GPG_PASSPHRASE }}
-        run: JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -s settings.xml deploy -Pcentral-sonatype-release -Dgpg.signer=bc -Dmaven.deploy.skip=false -DskipPublishing=false
+        run: |
+          set -eu
+          case "$PORELO_DEPLOY_PROFILE" in
+              central-sonatype-release | forge-release) ;;
+              *) echo "::error::PORELO_DEPLOY_PROFILE is '$PORELO_DEPLOY_PROFILE', not central-sonatype-release or forge-release"; exit 1 ;;
+          esac
+          JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -s settings.xml deploy -P"$PORELO_DEPLOY_PROFILE" -Dgpg.signer=bc -Dmaven.deploy.skip=false -DskipPublishing=false

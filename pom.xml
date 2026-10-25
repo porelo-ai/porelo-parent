@@ -585,6 +585,59 @@
 
         </profile>
 
+        <!-- Publishing snapshots to the local forge's Maven registry at MAVEN_SNAPSHOTS_URL, with maven-deploy-plugin
+             and unsigned. A snapshot only: with no release repository, a release version is refused. -->
+        <profile>
+            <id>forge-release</id>
+
+            <properties>
+                <!-- One switch under both profiles: what opts in with skipPublishing deploys here too. -->
+                <maven.deploy.skip>${skipPublishing}</maven.deploy.skip>
+            </properties>
+
+            <distributionManagement>
+                <!-- The id is the server settings.xml gives porelo-publisher's token, PORELO_PUBLISHER_TOKEN. -->
+                <snapshotRepository>
+                    <id>porelo-forge</id>
+                    <url>${env.MAVEN_SNAPSHOTS_URL}</url>
+                </snapshotRepository>
+            </distributionManagement>
+
+            <build>
+
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-forge-registry</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireEnvironmentVariable>
+                                            <variableName>MAVEN_SNAPSHOTS_URL</variableName>
+                                            <message>-Pforge-release deploys to MAVEN_SNAPSHOTS_URL, which is not set</message>
+                                        </requireEnvironmentVariable>
+                                        <requireEnvironmentVariable>
+                                            <variableName>PORELO_PUBLISHER_TOKEN</variableName>
+                                            <message>-Pforge-release deploys with PORELO_PUBLISHER_TOKEN, which is not set</message>
+                                        </requireEnvironmentVariable>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+
+            </build>
+
+        </profile>
+
         <!-- The Porelo tools on one classpath, for a workflow to run them from:
              'dependency:build-classpath -Pci-tools', then org.fuin.porelo.machines.Main and org.fuin.porelo.release.Main.
              Nothing in this pom's own build uses them. -->
