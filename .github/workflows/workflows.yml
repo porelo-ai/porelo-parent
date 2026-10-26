@@ -21,19 +21,14 @@ jobs:
         with:
           persist-credentials: false
 
-      # This repository has no release tool to run check-actions with: the same rule, read here. A step outside this
-      # repository names a full commit and, beside it, the version that commit is.
-      - name: Every step pinned to a commit
+      # The runner's own Java 25, as the Build uses, and the release tooling from this pom's ci-tools profile.
+      - name: Resolve the release tooling
         run: |
-          set -eu
-          bad=$(grep -nE '^[[:space:]-]*uses:' .github/workflows/*.y*ml \
-              | grep -vE 'uses:[[:space:]]*\./' \
-              | grep -vE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]+#[[:space:]]*v[0-9]' || true)
-          if [ -n "$bad" ]; then
-              printf 'ERROR not pinned to a commit with its version: %s\n' "$bad" >&2
-              exit 1
-          fi
-          echo "OK    every step pinned"
+          JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
+              -Dmdep.outputFile=target/cp.txt
+
+      - name: Every step pinned to a commit
+        run: '"$JAVA_HOME_25_X64/bin/java" -cp "$(cat target/cp.txt)" org.fuin.porelo.release.Main check-actions'
 
       # A file that does not load, or names no trigger or no job, is a workflow GitHub would not run.
       - name: Every workflow loads, with its triggers and jobs
