@@ -6,11 +6,12 @@ on:
     branches: ['**']
     # A release: v<version>, published to Central's releases.
     tags: ['v*']
-    # The image a Porelo task builds in: it changes no build here.
-    paths-ignore: ['porelo.yml']
+    # The image a Porelo task builds in changes no build here. Workflows alone build nothing either: an action's move
+    # is checked by its pull request's Workflow check, and the next push with content builds with it.
+    paths-ignore: ['porelo.yml', '.github/**']
   pull_request:
     branches: ['**']
-    paths-ignore: ['porelo.yml']
+    paths-ignore: ['porelo.yml', '.github/**']
   workflow_dispatch:
 
 # One run per branch. Runs queue rather than cancel each other, so a newer push cannot kill Publish halfway through.
