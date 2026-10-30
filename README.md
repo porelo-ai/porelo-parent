@@ -1,4 +1,10 @@
 # porelo-parent
+
+<img src="doc/images/crazy-chicken.svg" width="350" alt="Crazy chicken - just hatched">
+
+> **Crazy chicken - just hatched.** Interfaces, formats and even the purpose may change any day. Use it only to try
+> ideas, never to build on.
+
 Porelo Parent POM
 
 [Contributing](CONTRIBUTING.md), and [reporting a vulnerability](SECURITY.md).
