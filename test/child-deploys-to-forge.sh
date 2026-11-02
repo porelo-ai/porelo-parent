@@ -1,7 +1,8 @@
 #!/bin/sh
 # A child of this pom, built under the forge profile, deploys its snapshot unsigned to MAVEN_SNAPSHOTS_URL - only when
 # it opts in with skipPublishing, as under the release profile - and a build without that address fails instead of
-# deploying somewhere else.
+# deploying somewhere else. The children are snapshots of their own, whatever the parent's version: the profile has
+# no release repository, so at a release commit a child inheriting the parent's version is refused, as it should be.
 #
 # Run from the repository root: test/child-deploys-to-forge.sh [maven command, default ./mvnw]
 set -eu
@@ -26,6 +27,7 @@ child() {
         <relativePath>../../../pom.xml</relativePath>
     </parent>
     <artifactId>$1</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
         <skipPublishing>$2</skipPublishing>
@@ -53,7 +55,7 @@ fault() {
 child opted-in false
 REGISTRY="$WORK/registry-opted-in"
 deploy opted-in "$REGISTRY" || fault "a child that opts in failed to deploy under -Pforge-release"
-DEPLOYED="$REGISTRY/org/fuin/porelo/opted-in/$VERSION"
+DEPLOYED="$REGISTRY/org/fuin/porelo/opted-in/1.0.0-SNAPSHOT"
 ls "$DEPLOYED"/opted-in-*.pom > /dev/null 2>&1 \
     || fault "a child that opts in deployed no pom to MAVEN_SNAPSHOTS_URL; found: $(find "$REGISTRY" -type f 2> /dev/null)"
 SIGNED="$(find "$REGISTRY" -name '*.asc')"
