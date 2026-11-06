@@ -21,6 +21,30 @@ jobs:
         with:
           persist-credentials: false
 
+      # The wrapper's Maven, fetched once per pin: without it every job fetched it with one wget and no retry, and a
+      # single network hiccup failed a Build (2026-11-06).
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/wrapper
+          key: maven-wrapper-${{ runner.os }}-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
+
+      # The wrapper checks its Maven against distributionSha256Sum and installs it only whole, so asking it again after
+      # a failed fetch is a retry; a cached one answers at once.
+      - name: The wrapper's Maven
+        run: |
+          set -eu
+          for attempt in 1 2 3 4 5; do
+              if JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -q --version >/dev/null; then
+                  break
+              fi
+              if [ "$attempt" = 5 ]; then
+                  echo "::error::the wrapper could not fetch its Maven in 5 attempts"
+                  exit 1
+              fi
+              echo "::warning::the wrapper's Maven did not arrive (attempt $attempt); trying again"
+              sleep $((attempt * 10))
+          done
+
       # The runner's own Java 25, as the Build uses, and the release tooling from this pom's ci-tools profile. This
       # repository reads Central alone, so the tooling is a release there, never the snapshot the pom names.
       - name: Resolve the release tooling
