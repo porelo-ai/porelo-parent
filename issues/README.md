@@ -7,7 +7,7 @@ Grouped by state, in the order [workflow.yml](workflow.yml) gives; within a grou
 group with nothing in it is left out. A finished requirement's file is deleted once what outlives it is in the
 repository's documents.
 
-## Idea
+## Implementing
 
 | # | Size | Blocked by | What it covers |
 |---|---|---|---|

@@ -5,7 +5,7 @@
   "$schema": "issue-1.json",
   "id": "PA01",
   "title": "The Parent's Build Takes Its Downloads From The Cache",
-  "state": "Idea",
+  "state": "Implementing",
   "size": "S",
   "priority": "Medium",
   "rank": 1,
