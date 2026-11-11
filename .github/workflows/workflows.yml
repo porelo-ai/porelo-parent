@@ -16,6 +16,9 @@ jobs:
     name: Workflow check
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      # The release tooling this check runs: a release on Central, never the snapshot the pom names.
+      BUILDTOOLS_VERSION: 0.5.0
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -27,6 +30,15 @@ jobs:
         with:
           path: ~/.m2/wrapper
           key: maven-wrapper-${{ runner.os }}-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
+
+      # Maven's local repository for the release tooling, kept by the pom and the tooling's version that name what it
+      # holds: without it every run fetched the tooling and its plugins from Central. A moved pin gives a new key; the
+      # newest older entry seeds it, the old one is read no more, and GitHub drops it seven days after its last read.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: maven-repository-ci-tools-${{ runner.os }}-${{ env.BUILDTOOLS_VERSION }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-repository-ci-tools-${{ runner.os }}-
 
       # The wrapper checks its Maven against distributionSha256Sum and installs it only whole, so asking it again after
       # a failed fetch is a retry; a cached one answers at once.
@@ -50,7 +62,7 @@ jobs:
       - name: Resolve the release tooling
         run: |
           JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
-              -Dporelo.buildtools.version=0.5.0 -Dmdep.outputFile=target/cp.txt
+              -Dporelo.buildtools.version="$BUILDTOOLS_VERSION" -Dmdep.outputFile=target/cp.txt
 
       - name: Every step pinned to a commit
         run: '"$JAVA_HOME_25_X64/bin/java" -cp "$(cat target/cp.txt)" org.fuin.porelo.release.Main check-actions'

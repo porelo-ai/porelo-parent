@@ -5,7 +5,7 @@
   "$schema": "issue-1.json",
   "id": "PA01",
   "title": "The Parent's Build Takes Its Downloads From The Cache",
-  "state": "Implementing",
+  "state": "Review",
   "size": "S",
   "priority": "Medium",
   "rank": 1,
@@ -37,3 +37,27 @@ How it is today, read in the workflows:
 
 - A second run on one commit downloads nothing from Maven Central or the shfmt release; the cache list holds one entry
   per cache.
+
+## As built
+
+- `build.yml`, Build: Maven's local repository is cached with `actions/cache`, key
+  `maven-repository-<os>-<hashFiles('**/pom.xml')>`, restore-keys `maven-repository-<os>-`; the Publish job has its own
+  key, `maven-repository-publish-…`, since the Build's entry would hit there and never save the publishing plugins.
+- `build.yml`, "The pinned shfmt": restored by `pinned-shfmt-<digest>` (the digest the release names, as porelo's
+  `pinned-jdk` keys it), fetched only on a miss, checked against the digest after a hit too, and saved only after the
+  check passed.
+- `workflows.yml`, Workflow check: Maven's local repository for the release tooling, key
+  `maven-repository-ci-tools-<os>-<tooling version>-<hashFiles('**/pom.xml')>`; the tooling's version moved into the
+  job's `BUILDTOOLS_VERSION` so the key and the command read one value.
+- Retention without `gh cache delete`: each key names what the entry holds, so a moved pom or pin gives a new key, the
+  old entry is no longer read (a restore-key picks the newest entry only) and GitHub drops it seven days after its
+  last read. No job needs `actions: write`. The plan's pruning step was dropped for this, as porelo's `build.yml` does.
+- Not yet seen on a runner: the acceptance (a second run downloads nothing; one entry per cache) is read from the first
+  two runs after this lands.
+
+## After the code reading
+
+agy (gemini) read the change: no harm found (shfmt is checked against its digest before it reaches the path or the
+cache, the Publish job's key and restore prefix share nothing with a pull request's, every action is pinned and no job
+gains a permission). Two keys did not name all they hold, fixed: the Build's Maven key also hashes `test/*.sh`, whose
+child poms resolve the managed plugins, and the Publish key names the deploy profile, which picks its plugins.

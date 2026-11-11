@@ -43,6 +43,16 @@ jobs:
           path: ~/.m2/wrapper
           key: maven-wrapper-${{ runner.os }}-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
 
+      # Maven's local repository, for the build and the children its tests build, kept by the poms and the test scripts
+      # that name what it holds: without it every run fetched each plugin and dependency from Central. A moved pom gives
+      # a new key; the newest older entry seeds it, the old one is read no more, and GitHub drops it seven days after
+      # its last read, so only the newest entry is kept.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: maven-repository-${{ runner.os }}-${{ hashFiles('**/pom.xml', 'test/*.sh') }}
+          restore-keys: maven-repository-${{ runner.os }}-
+
       # The wrapper checks its Maven against distributionSha256Sum and installs it only whole, so asking it again after
       # a failed fetch is a retry; a cached one answers at once.
       - name: The wrapper's Maven
@@ -80,18 +90,39 @@ jobs:
       - name: A misformatted Java file fails validate
         run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-java-fails.sh
 
-      # The shfmt the pom pins, which Spotless does not download: checked against the digest its release names.
+      # The shfmt the pom pins, which Spotless does not download, kept by the digest its release names: fetched only on
+      # a miss, and checked against the digest after a hit too. A moved pin gives a new key; the old entry is read no
+      # more and GitHub drops it seven days after its last read.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: shfmt-cache
+        with:
+          path: ~/.cache/porelo-pinned/shfmt
+          key: pinned-shfmt-d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea
+
       - name: The pinned shfmt
+        env:
+          CACHE_HIT: ${{ steps.shfmt-cache.outputs.cache-hit }}
         run: |
           set -eu
           VERSION="$(sed -n 's|^ *<shfmt.version>\(.*\)</shfmt.version>$|\1|p' pom.xml)"
           [ "$VERSION" = 3.12.0 ] || { echo "::error::pom.xml pins shfmt $VERSION; this step installs 3.12.0"; exit 1; }
+          KEPT="$HOME/.cache/porelo-pinned/shfmt/shfmt"
+          if [ "$CACHE_HIT" != true ]; then
+              mkdir -p "$(dirname "$KEPT")"
+              curl -fsSL --retry 5 --retry-all-errors -o "$KEPT" \
+                  "https://github.com/mvdan/sh/releases/download/v$VERSION/shfmt_v${VERSION}_linux_amd64"
+          fi
+          echo "d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea  $KEPT" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/bin"
-          curl -fsSL --retry 5 --retry-all-errors -o "$RUNNER_TEMP/bin/shfmt" \
-              "https://github.com/mvdan/sh/releases/download/v$VERSION/shfmt_v${VERSION}_linux_amd64"
-          echo "d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea  $RUNNER_TEMP/bin/shfmt" | sha256sum -c -
-          chmod +x "$RUNNER_TEMP/bin/shfmt"
+          install -m 0755 "$KEPT" "$RUNNER_TEMP/bin/shfmt"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      # Only a download that passed its digest: the step above failing ends the job before this.
+      - if: steps.shfmt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/porelo-pinned/shfmt
+          key: pinned-shfmt-d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea
 
       # A child that names spotless-maven-plugin fails 'validate' on a misformatted shell script.
       - name: A misformatted shell script fails validate
@@ -139,6 +170,17 @@ jobs:
         with:
           path: ~/.m2/wrapper
           key: maven-wrapper-${{ runner.os }}-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
+
+      # Maven's local repository for publishing, under a key of its own: the build's key would always hit here and never
+      # save what Publish adds. Kept by the deploy profile and the poms that name what it holds: without it every run
+      # fetched each plugin and dependency from Central. A moved pom gives a new key; the newest older entry seeds it,
+      # the old one is read no more, and GitHub drops it seven days after its last read, so only the newest entry is
+      # kept.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: maven-repository-publish-${{ runner.os }}-${{ vars.PORELO_DEPLOY_PROFILE }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-repository-publish-${{ runner.os }}-${{ vars.PORELO_DEPLOY_PROFILE }}-
 
       # The wrapper checks its Maven against distributionSha256Sum and installs it only whole, so asking it again after
       # a failed fetch is a retry; a cached one answers at once.
