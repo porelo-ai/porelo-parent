@@ -1,9 +1,10 @@
-# The parent pom, built on every push and published: a snapshot from main, a release from a tag.
+# The parent pom, built on main, a tag and a pull request, and published: a snapshot from main, a release from a tag.
+# A branch's commit builds once, as its pull request, not again as a push.
 name: Build
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
     # A release: v<version>, published to Central's releases.
     tags: ['v*']
     # The image a Porelo task builds in changes no build here. Workflows alone build nothing either: an action's move
