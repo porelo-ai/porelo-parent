@@ -7,6 +7,12 @@ Grouped by state, in the order [workflow.yml](workflow.yml) gives; within a grou
 group with nothing in it is left out. A finished requirement's file is deleted once what outlives it is in the
 repository's documents.
 
+## Backlog
+
+| # | Size | Blocked by | What it covers |
+|---|---|---|---|
+| <a id="pa02"></a>[PA02](PA02-The-Issue-Heads-Are-Checked-Every-Day.md) | XS | - | A daily run checks every issue head under issues/ with porelo-release's `issues check issues`, so a head that breaks the issue format is found within a day. |
+
 ## Review
 
 | # | Size | Blocked by | What it covers |
