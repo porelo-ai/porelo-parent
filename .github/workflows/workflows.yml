@@ -1,12 +1,16 @@
 # The light check of a pull request that changes only workflows, Dependabot's action moves above all: every step pinned,
 # and every workflow a file GitHub can read. It builds nothing, publishes nothing and holds no secret, so the operator
-# can merge an action move on it alone. The Build leaves such a pull request to it.
+# can merge an action move on it alone. The Build leaves such a pull request to it. Once a day, and by hand, it also
+# checks every issue head under issues/, so a head that breaks the issue format is found within a day.
 name: Workflow check
 
 on:
   pull_request:
     branches: ['**']
     paths: ['.github/**']
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,8 +21,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      # The release tooling this check runs: a release on Central, never the snapshot the pom names.
-      BUILDTOOLS_VERSION: 0.5.0
+      # The release tooling this check runs: porelo-buildtools' snapshot, the first to check issue heads, read from
+      # Central's snapshots for its group alone (settings.xml's buildtools-snapshots profile).
+      BUILDTOOLS_VERSION: 0.5.3-SNAPSHOT
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,12 +62,16 @@ jobs:
               sleep $((attempt * 10))
           done
 
-      # The runner's own Java 25, as the Build uses, and the release tooling from this pom's ci-tools profile. This
-      # repository reads Central alone, so the tooling is a release there, never the snapshot the pom names.
+      # The runner's own Java 25, as the Build uses, and the release tooling from this pom's ci-tools profile, a
+      # snapshot of porelo-buildtools from Central's snapshots; the filter lets that repository answer only the groups
+      # .mvn/rrf/ lists for it.
       - name: Resolve the release tooling
         run: |
-          JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -q -Pci-tools -s settings.xml dependency:build-classpath \
-              -Dporelo.buildtools.version="$BUILDTOOLS_VERSION" -Dmdep.outputFile=target/cp.txt
+          JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -q -Pci-tools,buildtools-snapshots -s settings.xml \
+              -Daether.remoteRepositoryFilter.groupId=true \
+              -Daether.remoteRepositoryFilter.groupId.basedir=.mvn/rrf \
+              dependency:build-classpath -Dporelo.buildtools.version="$BUILDTOOLS_VERSION" \
+              -Dmdep.outputFile=target/cp.txt
 
       - name: Every step pinned to a commit
         run: '"$JAVA_HOME_25_X64/bin/java" -cp "$(cat target/cp.txt)" org.fuin.porelo.release.Main check-actions'
@@ -89,3 +98,7 @@ jobs:
               print(f"ERROR {line}", file=sys.stderr)
           sys.exit(1 if bad else 0)
           PY
+
+      # Every issue head under issues/ holds the issue format, and the index is the one the heads give.
+      - name: Every issue head holds the issue format
+        run: '"$JAVA_HOME_25_X64/bin/java" -cp "$(cat target/cp.txt)" org.fuin.porelo.release.Main issues check issues'
