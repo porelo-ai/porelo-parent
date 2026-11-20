@@ -64,7 +64,7 @@
         <skipPublishing>true</skipPublishing>
 
         <!-- The Porelo build tools: porelo-release and porelo-machines. -->
-        <porelo.buildtools.version>0.5.2-SNAPSHOT</porelo.buildtools.version>
+        <porelo.buildtools.version>0.5.3-SNAPSHOT</porelo.buildtools.version>
 
         <!-- Plugin versions a repository names in its own build. -->
         <build-helper.version>3.6.1</build-helper.version>
