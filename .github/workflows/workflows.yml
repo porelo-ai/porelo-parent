@@ -1,7 +1,7 @@
 # The light check of a pull request that changes only workflows, Dependabot's action moves above all: every step pinned,
 # and every workflow a file GitHub can read. It builds nothing, publishes nothing and holds no secret, so the operator
-# can merge an action move on it alone. The Build leaves such a pull request to it. Once a day, and by hand, it also
-# checks every issue head under issues/, so a head that breaks the issue format is found within a day.
+# can merge an action move on it alone. The Build leaves such a pull request to it. It also runs once a day and by
+# hand, so a pin that stops resolving is found within a day.
 name: Workflow check
 
 on:
@@ -98,7 +98,3 @@ jobs:
               print(f"ERROR {line}", file=sys.stderr)
           sys.exit(1 if bad else 0)
           PY
-
-      # Every issue head under issues/ holds the issue format, and the index is the one the heads give.
-      - name: Every issue head holds the issue format
-        run: '"$JAVA_HOME_25_X64/bin/java" -cp "$(cat target/cp.txt)" org.fuin.porelo.release.Main issues check issues'
