@@ -28,7 +28,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # Two GraalVM archives on a cold cache: the pinned one and the open one a child must refuse.
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -70,9 +71,60 @@ jobs:
               sleep $((attempt * 10))
           done
 
-      # The runner's own Java 25, and the Maven the wrapper pins: the runner's Maven is whatever its image carries.
+      # The GraalVM porelo-machines pins at porelo.buildtools.version, checked against its digest, as JAVA_HOME for the
+      # rest of the job: the enforcer's floor refuses a JDK open to CVE-2026-114938, the runner's own among them. The
+      # runner's Java 25 only runs porelo-machines, resolved through the ci-tools profile without building anything.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/porelo-pinned/graalvm
+          key: pinned-graalvm-${{ runner.os }}-${{ hashFiles('porelo.yml') }}
+
+      - name: The pinned GraalVM
+        env:
+          # The job's token, for a download from https://github.com alone; none on a host's forge.
+          PORELO_PINNED_GITHUB_TOKEN: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+        run: |
+          set -eu
+          export JAVA_HOME="$JAVA_HOME_25_X64"
+          ./mvnw -B -q -Pci-tools,buildtools-snapshots -s settings.xml \
+              -Daether.remoteRepositoryFilter.groupId=true \
+              -Daether.remoteRepositoryFilter.groupId.basedir=.mvn/rrf \
+              dependency:build-classpath -Dmdep.outputFile=target/machines-cp.txt
+          "$JAVA_HOME/bin/java" -cp "$(cat target/machines-cp.txt)" org.fuin.porelo.machines.Main \
+              jdk --github --cache "$HOME/.cache/porelo-pinned/graalvm"
+
+      # The pinned GraalVM, and the Maven the wrapper pins: the runner's Maven is whatever its image carries.
       - name: Build
-        run: JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -s settings.xml verify
+        run: ./mvnw -B -s settings.xml verify
+
+      # The task image installs the GraalVM porelo-machines pins, by the same archive and digest.
+      - name: The task image follows the pinned GraalVM
+        env:
+          MAVEN_ARGS: -Daether.remoteRepositoryFilter.groupId=true -Daether.remoteRepositoryFilter.groupId.basedir=.mvn/rrf
+        run: test/task-image-follows-machines-pin.sh
+
+      # GraalVM 25.5.5.0.3, the last release open to CVE-2026-114938, by its upstream digest, only for a child to refuse.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: open-graalvm-cache
+        with:
+          path: ~/.cache/porelo-pinned/open-graalvm
+          key: open-graalvm-c6438dee6c3ade2220d40b7ccdcad24b512d30e233e61bb4fc70519522de34ef
+
+      - name: A child refuses a JDK open to CVE-2026-114938
+        env:
+          CACHE_HIT: ${{ steps.open-graalvm-cache.outputs.cache-hit }}
+        run: |
+          set -eu
+          KEPT="$HOME/.cache/porelo-pinned/open-graalvm/graalvm.tar.gz"
+          if [ "$CACHE_HIT" != true ]; then
+              mkdir -p "$(dirname "$KEPT")"
+              curl -fsSL --retry 5 --retry-all-errors -o "$KEPT" \
+                  "https://github.com/graalvm/graalvm-ce-builds/releases/download/graal-25.5.5.0.3/graalvm-community-jdk-25i5-25.0.5.0.3_linux-x64_bin.tar.gz"
+          fi
+          echo "c6438dee6c3ade2220d40b7ccdcad24b512d30e233e61bb4fc70519522de34ef  $KEPT" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/open-graalvm"
+          tar -xzf "$KEPT" -C "$RUNNER_TEMP/open-graalvm" --strip-components=1
+          test/old-jdk-refused.sh "$RUNNER_TEMP/open-graalvm"
 
       # The repository was renamed: no tracked file says the old name.
       - name: No file says the old name
@@ -80,15 +132,15 @@ jobs:
 
       # What a child inherits under the release profile: the publishing plugin, as an extension, in its own build.
       - name: A child can publish
-        run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-publishes.sh
+        run: test/child-publishes.sh
 
       # What a child inherits under the forge profile: an unsigned snapshot deploy to MAVEN_SNAPSHOTS_URL, if it opts in.
       - name: A child can deploy to a forge
-        run: JAVA_HOME="$JAVA_HOME_25_X64" test/child-deploys-to-forge.sh
+        run: test/child-deploys-to-forge.sh
 
       # A child that names spotless-maven-plugin fails 'validate' on a misformatted Java file, and only then.
       - name: A misformatted Java file fails validate
-        run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-java-fails.sh
+        run: test/misformatted-java-fails.sh
 
       # The shfmt the pom pins, which Spotless does not download, kept by the digest its release names: fetched only on
       # a miss, and checked against the digest after a hit too. A moved pin gives a new key; the old entry is read no
@@ -126,7 +178,7 @@ jobs:
 
       # A child that names spotless-maven-plugin fails 'validate' on a misformatted shell script.
       - name: A misformatted shell script fails validate
-        run: JAVA_HOME="$JAVA_HOME_25_X64" test/misformatted-shell-fails.sh
+        run: test/misformatted-shell-fails.sh
 
   deploy:
     name: Publish
@@ -199,6 +251,28 @@ jobs:
               sleep $((attempt * 10))
           done
 
+      # The GraalVM porelo-machines pins at porelo.buildtools.version, checked against its digest, as JAVA_HOME for the
+      # rest of the job: the enforcer's floor refuses a JDK open to CVE-2026-114938, the runner's own among them. The
+      # runner's Java 25 only runs porelo-machines, resolved through the ci-tools profile without building anything.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/porelo-pinned/graalvm
+          key: pinned-graalvm-${{ runner.os }}-${{ hashFiles('porelo.yml') }}
+
+      - name: The pinned GraalVM
+        env:
+          # The job's token, for a download from https://github.com alone; none on a host's forge.
+          PORELO_PINNED_GITHUB_TOKEN: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+        run: |
+          set -eu
+          export JAVA_HOME="$JAVA_HOME_25_X64"
+          ./mvnw -B -q -Pci-tools,buildtools-snapshots -s settings.xml \
+              -Daether.remoteRepositoryFilter.groupId=true \
+              -Daether.remoteRepositoryFilter.groupId.basedir=.mvn/rrf \
+              dependency:build-classpath -Dmdep.outputFile=target/machines-cp.txt
+          "$JAVA_HOME/bin/java" -cp "$(cat target/machines-cp.txt)" org.fuin.porelo.machines.Main \
+              jdk --github --cache "$HOME/.cache/porelo-pinned/graalvm"
+
       # Signed by the plugin's BouncyCastle signer, which reads the armored key and its passphrase from this step's
       # environment and keeps them in the build's memory: the private key is never written to the runner's disk.
       # The forge names the profile: central-sonatype-release on GitHub, forge-release on the local forge.
@@ -217,4 +291,4 @@ jobs:
               central-sonatype-release | forge-release) ;;
               *) echo "::error::PORELO_DEPLOY_PROFILE is '$PORELO_DEPLOY_PROFILE', not central-sonatype-release or forge-release"; exit 1 ;;
           esac
-          JAVA_HOME="$JAVA_HOME_25_X64" ./mvnw -B -s settings.xml deploy -P"$PORELO_DEPLOY_PROFILE" -Dgpg.signer=bc -Dmaven.deploy.skip=false -DskipPublishing=false
+          ./mvnw -B -s settings.xml deploy -P"$PORELO_DEPLOY_PROFILE" -Dgpg.signer=bc -Dmaven.deploy.skip=false -DskipPublishing=false

@@ -48,7 +48,8 @@
 
     <properties>
         <!-- What builds: the JDK the enforcer requires, and the release every module compiles for. -->
-        <java.version>25</java.version>
+        <!-- The oldest JDK the enforcer builds on, 25.0.5.1, whose Base64 decoder no longer overflows (CVE-2026-114938); the enforcer reads 25.0.5.1 as 25.0.5-1. -->
+        <java.floor>[25.0.5-1,)</java.floor>
         <java.release.version>25</java.release.version>
         <maven.compiler.release>${java.release.version}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -483,8 +484,8 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>${java.version}</version>
-                                    <message>Java ${java.version} or later is required!</message>
+                                    <version>${java.floor}</version>
+                                    <message>Java 25.0.5.1 or later is required: an older JDK 25, and GraalVM CE 25.1 to 25.5, carry a Base64 decoder that overflows on a malformed string (CVE-2026-114938).</message>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>3.6.0</version>
