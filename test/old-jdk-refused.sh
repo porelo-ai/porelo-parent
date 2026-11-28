@@ -30,7 +30,15 @@ java_version() {
     "$1/bin/java" -XshowSettings:properties -version 2>&1 | sed -n 's|^ *java\.version = ||p'
 }
 OLD_VERSION="$(java_version "$OLD")"
+[ -n "$OLD_VERSION" ] || {
+    echo "FAULT $OLD is no JDK: its bin/java names no java.version"
+    exit 1
+}
 NEW_VERSION="$(java_version "${JAVA_HOME:?JAVA_HOME names the fixed JDK}")"
+[ -n "$NEW_VERSION" ] || {
+    echo "FAULT JAVA_HOME $JAVA_HOME is no JDK: its bin/java names no java.version"
+    exit 1
+}
 if JAVA_HOME="$OLD" "$MVN" -B -s settings.xml -f "$CHILD/pom.xml" validate >"$CHILD/old.log" 2>&1; then
     echo "FAULT a child validated on Java $OLD_VERSION ($OLD), which is open to CVE-2026-114938"
     exit 1

@@ -7,12 +7,12 @@ on:
     branches: [main]
     # A release: v<version>, published to Central's releases.
     tags: ['v*']
-    # The image a Porelo task builds in changes no build here. Workflows alone build nothing either: an action's move
-    # is checked by its pull request's Workflow check, and the next push with content builds with it.
-    paths-ignore: ['porelo.yml', '.github/**']
+    # Workflows alone build nothing: an action's move is checked by its pull request's Workflow check, and the next
+    # push with content builds with it. The task image builds, since the Build holds it to the pinned GraalVM.
+    paths-ignore: ['.github/**']
   pull_request:
     branches: ['**']
-    paths-ignore: ['porelo.yml', '.github/**']
+    paths-ignore: ['.github/**']
   workflow_dispatch:
 
 # One run per branch. Runs queue rather than cancel each other, so a newer push cannot kill Publish halfway through.
@@ -100,6 +100,7 @@ jobs:
       # The task image installs the GraalVM porelo-machines pins, by the same archive and digest.
       - name: The task image follows the pinned GraalVM
         env:
+          # Read by Maven itself.
           MAVEN_ARGS: -Daether.remoteRepositoryFilter.groupId=true -Daether.remoteRepositoryFilter.groupId.basedir=.mvn/rrf
         run: test/task-image-follows-machines-pin.sh
 
